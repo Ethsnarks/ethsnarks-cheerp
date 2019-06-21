@@ -1,0 +1,2 @@
+https://github.com/leaningtech/cheerp-meta/wiki/WebAssembly-output-(wasm-or-wast-mode)
+https://github.com/leaningtech/cheerp-meta/wiki/Autoconf-(configure)-support
