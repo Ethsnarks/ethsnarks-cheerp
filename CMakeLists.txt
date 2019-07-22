@@ -10,8 +10,9 @@ set(WITH_PROCPS OFF)
 set(DEBUG OFF)
 set(WITH_SUPERCOP OFF)
 set(ETHSNARKS_DISABLE_UTILS ON)
-set(CMAKE_CXX_FLAGS "--std=c++11 -O2 -target cheerp -cheerp-mode=wasm")
-set(CMAKE_C_FLAGS "-O2 -target cheerp -cheerp-mode=wasm")
+set(ETHSNARKS_NO_THREADS ON)
+set(CMAKE_CXX_FLAGS "--std=c++11 -O3 -target cheerp -cheerp-mode=wasm -cheerp-linear-heap-size=256 -fexceptions")
+set(CMAKE_C_FLAGS "-O3 -target cheerp -cheerp-mode=wasm")
 
 set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/installroot)
 
@@ -33,7 +34,7 @@ include_directories(ethsnarks/src)
 include_directories(
   ${DEPENDS_DIR}/libsnark
   ${DEPENDS_DIR}/libsnark/depends/libff
-  ${DEPENDS_DIR}/libsnark/depends/libfqfft)
+  ${DEPENDS_DIR}/libfqfft)
 
 
 add_executable(test_primes test/primes.c)

@@ -1,5 +1,8 @@
-CHEERP_ROOT=/Applications/cheerp
+CHEERP_ROOT ?= /Applications/cheerp
+CHEERP_LIBEXEC=$(CHEERP_ROOT)/libexec
 CHEERP_BIN=$(CHEERP_ROOT)/bin
+CHEERP_RANLIB=$(CHEERP_LIBEXEC)/cheerp-unknown-none-ranlib
+CHEERP_AR=$(CHEERP_LIBEXEC)/cheerp-unknown-none-ar
 
 ROOT_DIR := $(shell dirname "$(realpath $(lastword $(MAKEFILE_LIST)))")
 
@@ -26,17 +29,16 @@ git-submodules:
 # ethsnarks
 
 ethsnarks-patches:
-	#cd ./ethsnarks/depends/libsnark/depends/libff && patch -p1 < $(ROOT_DIR)/libff.patch
-	#cd ./ethsnarks/depends/libsnark/depends/libfqfft/depends/libff && patch -p1 < $(ROOT_DIR)/libff.patch
-	#cd ./ethsnarks/depends/libsnark/depends/libfqfft && patch -p1 < $(ROOT_DIR)/libqfft.patch
+	cd ./ethsnarks/depends/libsnark/depends/libff && patch -Ntp1 < $(ROOT_DIR)/libff.patch || true
+	cd ./ethsnarks/depends/libsnark/depends/libfqfft/depends/libff && patch -Ntp1 < $(ROOT_DIR)/libff.patch || true
 
 ethsnarks: build.cheerp/test_hashpreimage.js
 
-build.cheerp/test_hashpreimage.js: build/cmake_install.cmake # ethsnarks-patches
+build.cheerp/test_hashpreimage.js: build/cmake_install.cmake ethsnarks-patches
 	make -C build
 
 build/cmake_install.cmake: build
-	cd build && cmake -DCMAKE_TOOLCHAIN_FILE=$(CHEERP_ROOT)/share/cmake/Modules/CheerpToolchain.cmake .. # -DWITH_PROCPS=OFF -DPKG_CONFIG_USE_CMAKE_PREFIX_PATH=ON -DCMAKE_PREFIX_PATH=`pwd`/../installroot/ 
+	cd build && cmake -DCMAKE_TOOLCHAIN_FILE=$(CHEERP_ROOT)/share/cmake/Modules/CheerpWasmToolchain.cmake ..
 
 
 #######################################################################
@@ -48,15 +50,15 @@ gmp-bins: $(GMP_MAKE_BINS)
 gmp: installroot/lib/libgmp.a
 
 installroot/lib/libgmp.a: $(GMP_DIR) $(GMP_MAKE_BINS) $(GMP_DIR)/Makefile 
-	make -C $(GMP_DIR)
-	$(CHEERP_BIN)/llvm-link -o $(GMP_DIR)/.libs/libgmp.a $(GMP_DIR)/*.bc $(GMP_DIR)/mpn/*.bc $(GMP_DIR)/mpz/*.bc $(GMP_DIR)/mpf/*.bc $(GMP_DIR)/rand/*.bc
+	CHEERP_PREFIX=$(CHEERP_ROOT) PATH=$$PATH:$(CHEERP_BIN):$(CHEERP_LIBEXEC) make -C $(GMP_DIR)
+	#$(CHEERP_BIN)/llvm-link -o $(GMP_DIR)/.libs/libgmp.a $(GMP_DIR)/*.bc $(GMP_DIR)/mpn/*.bc $(GMP_DIR)/mpz/*.bc $(GMP_DIR)/mpf/*.bc $(GMP_DIR)/rand/*.bc
 	make -C $(GMP_DIR) install
 
 $(GMP_DIR)/Makefile: $(GMP_DIR)
 	cd $< && sed -i.bak -e 's/ obstack_vprintf / /' configure.ac
 	cd $< && sed -i.bak -e 's/^# Only do the GMP_ASM .*/gmp_asm_syntax_testing=no/' configure.ac
 	cd $< && autoconf
-	cd $< && ./configure --prefix=`pwd`/../installroot/ ABI=standard CC=$(CHEERP_BIN)/clang RANLIB=$(CHEERP_BIN)/llvm-ranlib AR=$(CHEERP_BIN)/llvm-ar NM=$(CHEERP_BIN)/llvm-nm LD=$(CHEERP_BIN)/llvm-link CFLAGS="-target cheerp -cheerp-mode=wasm -O2" --host=none --disable-assembly --disable-shared
+	cd $< && ./configure --prefix=`pwd`/../installroot/ ABI=standard CC=$(CHEERP_BIN)/clang RANLIB=$(CHEERP_RANLIB) AR=$(CHEERP_AR) NM=$(CHEERP_BIN)/llvm-nm LD=$(CHEERP_BIN)/llvm-link CFLAGS="-target cheerp -cheerp-mode=wasm -O2" --host=none --disable-assembly --disable-shared
 
 $(GMP_DIR): $(GMP_TAR)
 	tar -xf $<
